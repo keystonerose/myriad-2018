@@ -27,12 +27,13 @@ ExternalProject_Add(libphash
 find_package(JPEG REQUIRED)
 find_package(PNG  REQUIRED)
 
-add_executable(myriad main.cpp)
+add_executable(myriad "")
 add_dependencies(myriad libphash)
 
 set_property(TARGET myriad PROPERTY CXX_STANDARD 17)
 
 target_include_directories(myriad SYSTEM PRIVATE ${PHASH_DIR}/include)
 target_link_libraries(myriad ${PHASH_LIBRARY} ${PNG_LIBRARY} ${JPEG_LIBRARIES})
+include(src/CMakeLists.txt)
 
 install(TARGETS myriad RUNTIME DESTINATION bin)
