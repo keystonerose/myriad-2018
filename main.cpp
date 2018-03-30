@@ -1,6 +1,10 @@
+#include <cstdlib>
 #include <iostream>
 
-int main(int argc, char **argv) {
-    std::cout << "Hello, world!" << std::endl;
-    return 0;
+auto main() -> int {
+
+    std::cout << "Hello, world!" << '\n';
+    std::cout << std::flush;
+
+    return EXIT_SUCCESS;
 }
