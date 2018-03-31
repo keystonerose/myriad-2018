@@ -31,14 +31,16 @@ find_package(JPEG REQUIRED)
 find_package(PNG  REQUIRED)
 find_package(Qt5  REQUIRED COMPONENTS Gui)
 
+add_subdirectory("${SRC_DIR}/qtx")
+
 add_executable(myriad "")
-add_dependencies(myriad libphash)
+add_dependencies(myriad libphash qtx)
 
 set_property(TARGET myriad PROPERTY CXX_STANDARD 17)
 
 target_include_directories(myriad SYSTEM PRIVATE ${PHASH_DIR}/include)
 target_include_directories(myriad PRIVATE ${SRC_DIR})
-target_link_libraries(myriad Qt5::Gui ${PHASH_LIBRARY} ${PNG_LIBRARY} ${JPEG_LIBRARIES})
+target_link_libraries(myriad qtx Qt5::Gui ${PHASH_LIBRARY} ${PNG_LIBRARY} ${JPEG_LIBRARIES})
 include("${SRC_DIR}/CMakeLists.txt")
 
 install(TARGETS myriad RUNTIME DESTINATION bin)
