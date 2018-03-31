@@ -13,7 +13,7 @@ using namespace myr;
 
 namespace {
 
-    auto supportedMimeTypes() -> const QList<QByteArray>&;
+    auto supportedMIMETypes() -> const QList<QByteArray>&;
 
     /// Determines whether the file at the filesystem location `path` is an image file able to be
     /// processed by the application. May only be called after the `QApplication` instance has been
@@ -24,14 +24,14 @@ namespace {
         const QMimeDatabase mimeDb;
         const auto mimeName = mimeDb.mimeTypeForFile(path).name();
 
-        const auto& supported = supportedMimeTypes();
+        const auto& supported = supportedMIMETypes();
         return supported.contains(mimeName.toLatin1());
     }
 
     /// Returns a list of all image MIME types that the application is able to process. May only be
     /// called after the `QApplication` instance has been created.
 
-    auto supportedMimeTypes() -> const QList<QByteArray>& {
+    auto supportedMIMETypes() -> const QList<QByteArray>& {
         static auto result = QImageReader::supportedMimeTypes();
         return result;
     }

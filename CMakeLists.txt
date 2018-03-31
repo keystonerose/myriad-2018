@@ -4,6 +4,7 @@ project(myriad)
 set(CMAKE_AUTOMOC ON)
 
 set(3RDPARTY_DIR "3rdparty")
+set(SRC_DIR      "src")
 
 set(PHASH_DIR     "${CMAKE_CURRENT_SOURCE_DIR}/${3RDPARTY_DIR}/libphash")
 set(PHASH_SRC_DIR "${PHASH_DIR}/src/libphash")
@@ -36,7 +37,8 @@ add_dependencies(myriad libphash)
 set_property(TARGET myriad PROPERTY CXX_STANDARD 17)
 
 target_include_directories(myriad SYSTEM PRIVATE ${PHASH_DIR}/include)
+target_include_directories(myriad PRIVATE ${SRC_DIR})
 target_link_libraries(myriad Qt5::Gui ${PHASH_LIBRARY} ${PNG_LIBRARY} ${JPEG_LIBRARIES})
-include(src/CMakeLists.txt)
+include("${SRC_DIR}/CMakeLists.txt")
 
 install(TARGETS myriad RUNTIME DESTINATION bin)
