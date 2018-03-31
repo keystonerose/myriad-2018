@@ -44,7 +44,7 @@ Executable=file:///home/james/development/projects/myriad
 External Terminal=konsole --noclose --workdir %workdir -e %exe
 Project Target=myriad,myriad
 Use External Terminal=false
-Working Directory=
+Working Directory=file:///home/james/development/projects/myriad
 isExecutable=false
 
 [Project]

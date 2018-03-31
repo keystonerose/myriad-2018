@@ -1,77 +1,45 @@
 #include "MergeEngine.hpp"
 
-#include "qtx/SignalFilter.hpp"
+#include "ImageScanner.hpp"
 
-#include <QByteArray>
-#include <QFileInfo>
-#include <QImageReader>
-#include <QMimeDatabase>
-#include <QThread>
+#include <QMetaObject>
+
+#include <memory>
 
 using namespace myr;
-using qtx::SignalFilter;
 
-namespace {
+MergeEngine::MergeEngine(const QString& collectionRootPath) {
 
-    const QList<QByteArray>& supportedMimeTypes();
+    auto scanner = std::make_unique<ImageScanner>();
 
-    /// Determines whether the file at the filesystem location `path` is an image file able to be
-    /// processed by the application. May only be called after the `QApplication` instance has been
-    /// created.
+    scanner->moveToThread(&_workerThread);
+    QObject::connect(&_workerThread, &QThread::finished, scanner.get(), &QObject::deleteLater);
 
-    bool fileSupported(const QString& path) {
-
-        const QMimeDatabase mimeDb;
-        const auto mimeName = mimeDb.mimeTypeForFile(path).name();
-
-        const auto& supported = supportedMimeTypes();
-        return supported.contains(mimeName.toLatin1());
-    }
-
-    /// Returns a list of all image MIME types that the application is able to process. May only be
-    /// called after the `QApplication` instance has been created.
-
-    const QList<QByteArray>& supportedMimeTypes() {
-        static auto result = QImageReader::supportedMimeTypes();
-        return result;
-    }
-}
-
-MergeEngine::MergeEngine(const QString& collectionRootPath)
-  : _collectionRoot{collectionRootPath} {}
-
-void MergeEngine::scanForImages(const QString& rootPath) {
-
-    const auto rootInfo = QFileInfo{rootPath};
-    if (!rootInfo.exists()) {
+    _workerThread.start();
+    if (!_workerThread.isRunning()) {
         return;
     }
 
-    const auto inputCountSignal = SignalFilter{*this, &MergeEngine::inputCountChanged};
+    // If the worker thread has been started successfully, then the worker objects associated
+    // with it will be deleted automatically when that thread emits the `QThread::finished()`
+    // signal, so we release ownership of them.
 
-    if (rootInfo.isFile()) {
+    const auto rawScanner = scanner.release();
 
-        if (fileSupported(rootPath)) {
-            _inputs.emplace_back(rootPath);
-            inputCountSignal.tryEmit(_inputs.size(), _inputFolderCount);
-        }
-    }
-    else if (rootInfo.isDir()) {
+    QObject::connect(
+        rawScanner, &ImageScanner::countChanged,
+        this, &MergeEngine::collectionCountChanged);
 
-        auto rootDir = QDir{rootPath};
-        rootDir.setFilter(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
-
-        const auto items = rootDir.entryInfoList();
-        ++_inputFolderCount;
-        inputCountSignal.tryEmit(_inputs.size(), _inputFolderCount);
-
-        const auto end = items.end();
-        for (auto iter = items.begin(); iter != end && !threadInterrupted(); ++iter) {
-            scanForImages(iter->absoluteFilePath());
-        }
-    }
+    QMetaObject::invokeMethod(rawScanner, [=] { rawScanner->scan(collectionRootPath); });
 }
 
-auto MergeEngine::threadInterrupted() const -> bool {
-    return QThread::currentThread()->isInterruptionRequested();
+MergeEngine::~MergeEngine() {
+    _workerThread.quit();
+    _workerThread.wait();
+}
+
+void MergeEngine::addInput(const QImage&) {
+}
+
+void MergeEngine::run() {
 }

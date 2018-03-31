@@ -13,14 +13,45 @@
 
 namespace qtx {
 
-    /// TODO:DOC args must all be copyable
-    /// target must be non-const if the signal is
+    /// Signal suppression modes for `SignalFilter`. Each describes different criteria by which Qt
+    /// signal emissions are skipped.
+
+    enum class SignalFilterType {
+
+        /// Performs an emission iff the arguments passed to the signal are different to the
+        /// arguments that were passed the previous time an emission was attempted.
+
+        Flush,
+
+        /// Performs an emission iff the arguments passed to the signal are different to the
+        /// arguments that were passed the previous time an emission was attempted **and** a
+        /// sufficiently long interval of time has passed since the last emission that was actually
+        /// performed.
+
+        Timed,
+    };
+
+    /// Wrapper around the Qt `Q_EMIT` operation that selectively suppresses emissions in situations
+    /// where a great many emissions would otherwise be performed in a short time period. The
+    /// `SignalFilterType` enumeration describes the different modes of suppression that are
+    /// available.
+    ///
+    /// `Target` must be a `QObject` subclass providing a signal to filter emissions of.
+    /// `SignalArgs` must be the fully-qualified argument types for that signal, each of which must
+    /// be copyable. (Non-copyable argument types are unable to be stored for comparison against the
+    /// next group of arguments passed to the signal, and so are inconsistent with the operation of
+    /// `SignalFilter`.)
 
     template <typename Target, typename... SignalArgs>
     class SignalFilter {
     public:
 
-        static constexpr auto DefaultInterval = std::chrono::milliseconds{20};
+        static constexpr auto DefaultInterval = std::chrono::milliseconds{50};
+
+        /// Constructs a `SignalFilter` object to suppress surplus emissions of the signal `sig` for
+        /// the object `target`. The `target` reference must remain valid for the lifetime of the
+        /// `SignalFilter`. `interval` governs the length of the pause introduced by the
+        /// `SignalFilterType::Timed` mode.
 
         using SignalPtr = void (Target::*)(SignalArgs...);
         explicit SignalFilter(
@@ -29,36 +60,20 @@ namespace qtx {
             assert(sig);
         }
 
-        template <typename... Args>
-        void forceEmit(Args&&... args) const {
-
-            _last = EmissionInfo{
-                std::make_tuple(args...),
-                std::chrono::steady_clock::now()};
-
-            Target& target = _target.get();
-            Q_EMIT (target.*_sig)(std::forward<Args>(args)...);
-        }
+        /// Performs an emission on the signal and target object that the `SignalFilter` was
+        /// constructed with, with the arguments `args`, iff the criteria associated with `type` are
+        /// met. (See `SignalFilterType`.) Returns `true` if an emission was performed or `false` if
+        /// it was suppressed.
 
         template <typename... Args>
-        auto tryEmit(Args&&... args) const -> bool {
+        auto tryEmit(SignalFilterType type, Args&&... args) const -> bool {
 
-            if (_last) {
-
-                const auto now     = std::chrono::steady_clock::now();
-                const auto elapsed = now - _last->time;
-
-                if ((elapsed >= _interval) && (std::tie(args...) != _last->args)) {
-                    forceEmit(std::forward<Args>(args)...);
-                    return true;
-                }
-            }
-            else {
-
-                forceEmit(std::forward<Args>(args)...);
-                return true;
+            switch (type) {
+            case SignalFilterType::Flush: return flushEmit(std::forward<Args>(args)...);
+            case SignalFilterType::Timed: return timedEmit(std::forward<Args>(args)...);
             }
 
+            assert(false);
             return false;
         }
 
@@ -68,6 +83,32 @@ namespace qtx {
             std::tuple<std::decay_t<SignalArgs>...> args;
             std::chrono::steady_clock::time_point time;
         };
+
+        template <typename... Args>
+        auto flushEmit(Args&&... args) const -> bool {
+
+            if (_last && (std::tie(args...) == _last->args)) {
+                return false;
+            }
+
+            _last = EmissionInfo{
+                std::make_tuple(args...),
+                std::chrono::steady_clock::now()};
+
+            Target& target = _target.get();
+            Q_EMIT (target.*_sig)(std::forward<Args>(args)...);
+            return true;
+        }
+
+        template <typename... Args>
+        auto timedEmit(Args&&... args) const -> bool {
+
+            const auto now     = std::chrono::steady_clock::now();
+            const auto elapsed = now - _last->time;
+
+            return (elapsed >= _interval)
+                && flushEmit(std::forward<Args>(args)...);
+        }
 
         std::reference_wrapper<Target> _target;
         SignalPtr _sig;

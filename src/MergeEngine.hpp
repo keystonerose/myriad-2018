@@ -1,10 +1,10 @@
 #ifndef MYRIAD_MERGE_ENGINE_HPP
 #define MYRIAD_MERGE_ENGINE_HPP
 
-#include <QDir>
 #include <QImage>
 #include <QObject>
 #include <QString>
+#include <QThread>
 
 #include <vector>
 
@@ -20,28 +20,25 @@ namespace myr {
 
     public:
 
-        // TODO:DOC
-        /// The collection is identified as the set of all image files that are filesystem descendants
-        /// of a specified collection directory.
+        /// Constructs an engine object, launches a worker thread and, in that worker thread, starts
+        /// recursively scanning the directory located at `collectionRootPath` for a collection
+        /// supported image files. The progress of this scan may be monitored via the
+        /// `collectionCountChanged()` signal.
 
         explicit MergeEngine(const QString& collectionRootPath);
+
+        ~MergeEngine();
 
         void addInput(const QImage& image);
         void run();
 
     Q_SIGNALS:
 
-        void inputCountChanged(int fileCount, int folderCount);
+        void collectionCountChanged(int files, int folders);
 
     private:
 
-        void scanForImages(const QString& rootPath);
-
-        auto threadInterrupted() const -> bool;
-
-        QDir _collectionRoot;
-        std::vector<QImage> _inputs;
-        int _inputFolderCount = 0;
+        QThread _workerThread;
     };
 }
 
