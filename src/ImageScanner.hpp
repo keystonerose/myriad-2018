@@ -3,7 +3,6 @@
 
 #include "qtx/SignalFilter.hpp"
 
-#include <QImage>
 #include <QObject>
 #include <QString>
 
@@ -30,14 +29,14 @@ namespace myr {
     signals:
 
         void countChanged(int files, int folders);
-        void scanFinished(const std::vector<QImage>& images);
+        void scanFinished(const std::vector<QString>& imagePaths);
 
     private:
 
         void emitCountChanged(qtx::SignalFilterType type = qtx::SignalFilterType::Timed) const;
         void recursiveScan(const QString& rootPath);
 
-        std::vector<QImage> _images;
+        std::vector<QString> _imagePaths;
         int _folderCount = 0;
 
         qtx::SignalFilter<ImageScanner, int, int> _countChangedSignal;

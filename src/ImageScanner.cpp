@@ -41,7 +41,7 @@ ImageScanner::ImageScanner()
   : _countChangedSignal{*this, &ImageScanner::countChanged} {}
 
 void ImageScanner::emitCountChanged(const qtx::SignalFilterType type) const {
-    _countChangedSignal.tryEmit(type, _images.size(), _folderCount);
+    _countChangedSignal.tryEmit(type, _imagePaths.size(), _folderCount);
 }
 
 void ImageScanner::recursiveScan(const QString& rootPath) {
@@ -54,7 +54,7 @@ void ImageScanner::recursiveScan(const QString& rootPath) {
     if (rootInfo.isFile()) {
 
         if (fileSupported(rootPath)) {
-            _images.emplace_back(rootPath);
+            _imagePaths.push_back(rootPath);
             emitCountChanged();
         }
     }
@@ -71,7 +71,7 @@ void ImageScanner::recursiveScan(const QString& rootPath) {
         assert(thread);
 
         const auto end = items.end();
-        for (auto iter = items.begin(); iter != end && !thread->isInterruptionRequested(); ++iter) {
+        for (auto iter = items.begin(); (iter != end) && !thread->isInterruptionRequested(); ++iter) {
             recursiveScan(iter->absoluteFilePath());
         }
     }
@@ -83,5 +83,5 @@ void ImageScanner::scan(const QString& rootPath) {
     recursiveScan(rootPath);
 
     emitCountChanged(qtx::SignalFilterType::Flush);
-    Q_EMIT scanFinished(_images);
+    Q_EMIT scanFinished(_imagePaths);
 }
