@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(myriad)
 
+set(CMAKE_AUTOMOC ON)
+
 set(3RDPARTY_DIR "3rdparty")
 
 set(PHASH_DIR     "${CMAKE_CURRENT_SOURCE_DIR}/${3RDPARTY_DIR}/libphash")
@@ -26,7 +28,7 @@ ExternalProject_Add(libphash
 
 find_package(JPEG REQUIRED)
 find_package(PNG  REQUIRED)
-find_package(Qt5  REQUIRED COMPONENTS Core)
+find_package(Qt5  REQUIRED COMPONENTS Gui)
 
 add_executable(myriad "")
 add_dependencies(myriad libphash)
@@ -34,7 +36,7 @@ add_dependencies(myriad libphash)
 set_property(TARGET myriad PROPERTY CXX_STANDARD 17)
 
 target_include_directories(myriad SYSTEM PRIVATE ${PHASH_DIR}/include)
-target_link_libraries(myriad Qt5::Core ${PHASH_LIBRARY} ${PNG_LIBRARY} ${JPEG_LIBRARIES})
+target_link_libraries(myriad Qt5::Gui ${PHASH_LIBRARY} ${PNG_LIBRARY} ${JPEG_LIBRARIES})
 include(src/CMakeLists.txt)
 
 install(TARGETS myriad RUNTIME DESTINATION bin)
