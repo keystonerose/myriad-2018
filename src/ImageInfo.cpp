@@ -18,6 +18,15 @@ using namespace myr;
 
 namespace {
 
+    struct MetaTypeRegistrar {
+        explicit MetaTypeRegistrar() {
+            qRegisterMetaType<ImageInfo>();
+            qRegisterMetaType<ImageInfoSeq>("myr::ImageInfoSeq");
+        }
+    };
+
+    MetaTypeRegistrar registrar;
+
     /// Generates a checksum for the contents of the file located at `path`, which may be zero if
     /// the file was able to be opened but no data were able to read from it. Throws `FileIOError`
     /// if the file could not be opened.
@@ -54,8 +63,7 @@ namespace {
     }
 }
 
-ImageInfo::ImageInfo(const QString& path)
-  : _fileInfo{path} {
+void ImageInfo::setFile(const QString& path) {
 
     const auto image = QImage{path};
     if (image.isNull()) {
@@ -67,6 +75,8 @@ ImageInfo::ImageInfo(const QString& path)
 
     _checksum = fileChecksum(path);
     _format   = imageFileFormat(path);
+
+    _fileInfo.setFile(path);
 
     // While ulong64 and std::uint64_t are specified to be compatible types, there is potentially a
     // conversion between the two that prevents a reference to result.phash from being passed

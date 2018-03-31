@@ -25,4 +25,5 @@ void ImageHasher::hash(const std::vector<QString>& imagePaths) {
     }
 
     emitCountChanged(qtx::SignalFilterType::Flush);
+    Q_EMIT hashFinished(_imageInfo);
 }

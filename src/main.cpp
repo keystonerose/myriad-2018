@@ -20,6 +20,11 @@ namespace {
         std::cout << std::flush;
     }
 
+    void printHashFinished() {
+        std::cout << "ImageHasher::hashFinished()\n";
+        std::cout << std::flush;
+    }
+
     void printScanCount(int files, int folders) {
         std::cout << "ImageScanner::countChanged(" << files << ", " << folders << ")\n";
         std::cout << std::flush;
@@ -44,13 +49,13 @@ auto main(int argc, char** argv) -> int {
     QObject::connect(&scanner, &ImageScanner::countChanged, printScanCount);
     QObject::connect(&scanner, &ImageScanner::scanFinished, printScanFinished);
     QObject::connect(&hasher,  &ImageHasher::countChanged,  printHashCount);
-
-    QMetaObject::invokeMethod(&scanner, [&scanner] { scanner.scan("test/collection"); });
-
-    // This event loop will eventually be part of a UI thread; for now, we print debug information
-    // to the terminal and require Ctrl+C to terminate the application.
+    QObject::connect(&hasher,  &ImageHasher::hashFinished,  printHashFinished);
 
     auto loop = QEventLoop{};
+    QObject::connect(&scanner, &ImageScanner::scanFinished, &hasher, &ImageHasher::hash);
+    QObject::connect(&hasher,  &ImageHasher::hashFinished,  &loop,   &QEventLoop::quit);
+
+    QMetaObject::invokeMethod(&scanner, [&scanner] { scanner.scan("test/collection"); });
     loop.exec();
 
     return EXIT_SUCCESS;

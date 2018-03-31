@@ -2,9 +2,11 @@
 #define MYRIAD_IMAGE_INFO_HPP
 
 #include <QFileInfo>
+#include <QMetaType>
 #include <QString>
 
 #include <cstdint>
+#include <vector>
 
 namespace myr {
 
@@ -20,20 +22,17 @@ namespace myr {
     /// with logic used to determine which images are preferable when they are considered to be
     /// different.
     ///
-    /// All of the significant work done by an `ImageInfo` object is performed upon construction;
-    /// after that point, attributes may be queried from the object at negligible performance cost.
+    /// All of the significant work done by an `ImageInfo` object is performed during a call to
+    /// `setFile()` (or upon construction if a path is provided); after that point, attributes may
+    /// be queried from the object at negligible performance cost.
 
     class ImageInfo {
     public:
 
         friend bool operator==(const ImageInfo& lhs, const ImageInfo& rhs);
 
-        /// Fetches information about the image file at the location `path` and constructs an
-        /// `ImageInfo` object to store that information. Since the stored image attributes include
-        /// the perceptual hash of the image, this is an expensive operation. Throws
-        /// `myr::FileIOError` if image data could not be read from a file at `path`.
-
-        explicit ImageInfo(const QString& path);
+        explicit ImageInfo() = default;
+        explicit ImageInfo(const QString& path) { setFile(path); }
 
         auto checksum()  const -> std::uint16_t { return _checksum; }
         auto file_size() const -> std::uint64_t { return _fileInfo.size(); }
@@ -42,6 +41,13 @@ namespace myr {
         auto path()      const -> QString       { return _fileInfo.absoluteFilePath(); }
         auto phash()     const -> std::uint64_t { return _phash; }
         auto width()     const -> int           { return _width; }
+
+        /// Fetches information about the image file at the location `path` and constructs an
+        /// `ImageInfo` object to store that information. Since the stored image attributes include
+        /// the perceptual hash of the image, this is an expensive operation. Throws
+        /// `myr::FileIOError` if image data could not be read from a file at `path`.
+
+        void setFile(const QString& path);
 
     private:
 
@@ -55,6 +61,8 @@ namespace myr {
         QFileInfo _fileInfo;
     };
 
+    using ImageInfoSeq = std::vector<ImageInfo>;
+
     /// Tests whether two `ImageInfo` objects describe files at the same location on disk. Note that
     /// this is a stronger criterion than `lhs` and `rhs` being bytewise equivalent. (The weaker
     /// condition may be assessed by comparison of their checksums.)
@@ -62,5 +70,8 @@ namespace myr {
     inline bool operator==(const ImageInfo& lhs, const ImageInfo& rhs) { return lhs._fileInfo == rhs._fileInfo; }
     inline bool operator!=(const ImageInfo& lhs, const ImageInfo& rhs) { return !(lhs == rhs); }
 }
+
+Q_DECLARE_METATYPE(myr::ImageInfo)
+Q_DECLARE_METATYPE(myr::ImageInfoSeq)
 
 #endif

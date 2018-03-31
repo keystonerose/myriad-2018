@@ -23,13 +23,13 @@ namespace myr {
     signals:
 
         void countChanged(int value);
-        void hashFinished(const std::vector<ImageInfo>& imageInfo);
+        void hashFinished(const myr::ImageInfoSeq& imageInfo);
 
     private:
 
         void emitCountChanged(qtx::SignalFilterType type = qtx::SignalFilterType::Timed) const;
 
-        std::vector<ImageInfo> _imageInfo;
+        ImageInfoSeq _imageInfo;
         int _folderCount = 0;
 
         qtx::SignalFilter<ImageHasher, int> _countChangedSignal;
