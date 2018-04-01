@@ -47,15 +47,15 @@ auto main(int argc, char** argv) -> int {
     thread.start();
 
     QObject::connect(&scanner, &ImageScanner::countChanged, printScanCount);
-    QObject::connect(&scanner, &ImageScanner::scanFinished, printScanFinished);
+    QObject::connect(&scanner, &ImageScanner::finished,     printScanFinished);
     QObject::connect(&hasher,  &ImageHasher::countChanged,  printHashCount);
-    QObject::connect(&hasher,  &ImageHasher::hashFinished,  printHashFinished);
+    QObject::connect(&hasher,  &ImageHasher::finished,      printHashFinished);
 
     auto loop = QEventLoop{};
-    QObject::connect(&scanner, &ImageScanner::scanFinished, &hasher, &ImageHasher::hash);
-    QObject::connect(&hasher,  &ImageHasher::hashFinished,  &loop,   &QEventLoop::quit);
+    QObject::connect(&scanner, &ImageScanner::finished, &hasher, &ImageHasher::exec);
+    QObject::connect(&hasher,  &ImageHasher::finished,  &loop,   &QEventLoop::quit);
 
-    QMetaObject::invokeMethod(&scanner, [&scanner] { scanner.scan("test/collection"); });
+    QMetaObject::invokeMethod(&scanner, [&scanner] { scanner.exec("test/collection"); });
     loop.exec();
 
     return EXIT_SUCCESS;

@@ -1,7 +1,7 @@
 #ifndef MYRIAD_IMAGE_SCANNER_HPP
 #define MYRIAD_IMAGE_SCANNER_HPP
 
-#include "qtx/SignalFilter.hpp"
+#include "qtx/EmissionFilter.hpp"
 
 #include <QObject>
 #include <QString>
@@ -10,6 +10,7 @@
 
 namespace myr {
 
+    // TODO:DOC update
     /// Worker class that recursively scans directories for supported image files. Directories to
     /// scan are specified via (typically cross-thread) invocation of the `scan()` member function;
     /// output is via the `countChanged()` and `scanFinished()` signals.
@@ -22,24 +23,11 @@ namespace myr {
         Q_OBJECT
 
     public:
-
-        explicit ImageScanner();
-        void scan(const QString& rootPath);
+        void exec(const QString& rootPath) const;
 
     signals:
-
-        void countChanged(int files, int folders);
-        void scanFinished(const std::vector<QString>& imagePaths);
-
-    private:
-
-        void emitCountChanged(qtx::SignalFilterType type = qtx::SignalFilterType::Timed) const;
-        void recursiveScan(const QString& rootPath);
-
-        std::vector<QString> _imagePaths;
-        int _folderCount = 0;
-
-        qtx::SignalFilter<ImageScanner, int, int> _countChangedSignal;
+        void countChanged(int files, int folders) const;
+        void finished(const std::vector<QString>& imagePaths) const;
     };
 }
 

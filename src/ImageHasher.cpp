@@ -1,29 +1,26 @@
 #include "ImageHasher.hpp"
 
+#include "qtx/EmissionFilter.hpp"
+
 #include <QThread>
 
 using namespace myr;
 
-ImageHasher::ImageHasher()
-  : _countChangedSignal{*this, &ImageHasher::countChanged} {}
+void ImageHasher::exec(const std::vector<QString>& imagePaths) const {
 
-void ImageHasher::emitCountChanged(const qtx::SignalFilterType type) const {
-    _countChangedSignal.tryEmit(type, _imageInfo.size());
-}
+    auto info = ImageInfoSeq{};
+    const auto countFilter = qtx::EmissionFilter{*this, &ImageHasher::countChanged};
+    countFilter.tryEmit(qtx::EmissionType::Flush, info.size());
 
-void ImageHasher::hash(const std::vector<QString>& imagePaths) {
-
-    emitCountChanged(qtx::SignalFilterType::Flush);
-
-    const auto thread = this->thread();
+    const auto thread = QThread::currentThread();
     assert(thread);
 
     const auto end = imagePaths.end();
     for (auto iter = imagePaths.begin(); (iter != end) && !thread->isInterruptionRequested(); ++iter) {
-        _imageInfo.emplace_back(*iter);
-        emitCountChanged();
+        info.emplace_back(*iter);
+        countFilter.tryEmit(qtx::EmissionType::Timed, info.size());
     }
 
-    emitCountChanged(qtx::SignalFilterType::Flush);
-    Q_EMIT hashFinished(_imageInfo);
+    countFilter.tryEmit(qtx::EmissionType::Flush, info.size());
+    Q_EMIT finished(info);
 }

@@ -1,5 +1,7 @@
-#ifndef QTX_SIGNAL_FILTER_HPP
-#define QTX_SIGNAL_FILTER_HPP
+#ifndef QTX_EMISSION_FILTER_HPP
+#define QTX_EMISSION_FILTER_HPP
+
+#include "ksr/mem_fn_ptr.hpp"
 
 #include <QObject>
 
@@ -13,10 +15,10 @@
 
 namespace qtx {
 
-    /// Signal suppression modes for `SignalFilter`. Each describes different criteria by which Qt
+    /// Signal suppression modes for `EmissionFilter`. Each describes different criteria by which Qt
     /// signal emissions are skipped.
 
-    enum class SignalFilterType {
+    enum class EmissionType {
 
         /// Performs an emission iff the arguments passed to the signal are different to the
         /// arguments that were passed the previous time an emission was attempted.
@@ -33,44 +35,43 @@ namespace qtx {
 
     /// Wrapper around the Qt `Q_EMIT` operation that selectively suppresses emissions in situations
     /// where a great many emissions would otherwise be performed in a short time period. The
-    /// `SignalFilterType` enumeration describes the different modes of suppression that are
-    /// available.
+    /// `EmissionType` enumeration describes the different modes of suppression that are available.
     ///
     /// `Target` must be a `QObject` subclass providing a signal to filter emissions of.
     /// `SignalArgs` must be the fully-qualified argument types for that signal, each of which must
     /// be copyable. (Non-copyable argument types are unable to be stored for comparison against the
     /// next group of arguments passed to the signal, and so are inconsistent with the operation of
-    /// `SignalFilter`.)
+    /// `EmissionFilter`.)
 
     template <typename Target, typename... SignalArgs>
-    class SignalFilter {
+    class EmissionFilter {
     public:
 
         static constexpr auto DefaultInterval = std::chrono::milliseconds{50};
 
-        /// Constructs a `SignalFilter` object to suppress surplus emissions of the signal `sig` for
-        /// the object `target`. The `target` reference must remain valid for the lifetime of the
-        /// `SignalFilter`. `interval` governs the length of the pause introduced by the
-        /// `SignalFilterType::Timed` mode.
+        /// Constructs a `EmissionFilter` object to suppress surplus emissions of the signal `sig`
+        /// for the object `target`. The `target` reference must remain valid for the lifetime of
+        /// the `EmissionFilter`. `interval` governs the length of the pause introduced by the
+        /// `EmissionType::Timed` mode.
 
-        using SignalPtr = void (Target::*)(SignalArgs...);
-        explicit SignalFilter(
+        using SignalPtr = ksr::mem_fn_ptr_t<void, Target, SignalArgs...>;
+        explicit EmissionFilter(
             Target& target, SignalPtr sig, std::chrono::milliseconds interval = DefaultInterval)
           : _target{target}, _sig{sig}, _interval{interval} {
             assert(sig);
         }
 
-        /// Performs an emission on the signal and target object that the `SignalFilter` was
+        /// Performs an emission on the signal and target object that the `EmissionFilter` was
         /// constructed with, with the arguments `args`, iff the criteria associated with `type` are
-        /// met. (See `SignalFilterType`.) Returns `true` if an emission was performed or `false` if
-        /// it was suppressed.
+        /// met. (See `EmissionType`.) Returns `true` if an emission was performed or `false` if it
+        /// was suppressed.
 
         template <typename... Args>
-        auto tryEmit(SignalFilterType type, Args&&... args) const -> bool {
+        auto tryEmit(EmissionType type, Args&&... args) const -> bool {
 
             switch (type) {
-            case SignalFilterType::Flush: return flushEmit(std::forward<Args>(args)...);
-            case SignalFilterType::Timed: return timedEmit(std::forward<Args>(args)...);
+            case EmissionType::Flush: return flushEmit(std::forward<Args>(args)...);
+            case EmissionType::Timed: return timedEmit(std::forward<Args>(args)...);
             }
 
             assert(false);
@@ -116,6 +117,14 @@ namespace qtx {
 
         mutable std::optional<EmissionInfo> _last;
     };
+
+    template <typename T, typename... SignalArgs>
+    EmissionFilter(T&, void (T::*)(SignalArgs...), std::chrono::milliseconds)
+        -> EmissionFilter<T, SignalArgs...>;
+
+    template <typename T, typename... SignalArgs>
+    EmissionFilter(const T&, void (T::*)(SignalArgs...) const, std::chrono::milliseconds)
+        -> EmissionFilter<const T, SignalArgs...>;
 }
 
 #endif

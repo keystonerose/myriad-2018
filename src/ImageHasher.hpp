@@ -3,8 +3,6 @@
 
 #include "ImageInfo.hpp"
 
-#include "qtx/SignalFilter.hpp"
-
 #include <QObject>
 #include <QString>
 
@@ -16,23 +14,11 @@ namespace myr {
         Q_OBJECT
 
     public:
-
-        explicit ImageHasher();
-        void hash(const std::vector<QString>& imagePaths);
+        void exec(const std::vector<QString>& imagePaths) const;
 
     signals:
-
-        void countChanged(int value);
-        void hashFinished(const myr::ImageInfoSeq& imageInfo);
-
-    private:
-
-        void emitCountChanged(qtx::SignalFilterType type = qtx::SignalFilterType::Timed) const;
-
-        ImageInfoSeq _imageInfo;
-        int _folderCount = 0;
-
-        qtx::SignalFilter<ImageHasher, int> _countChangedSignal;
+        void countChanged(int value) const;
+        void finished(const myr::ImageInfoSeq& imageInfo) const;
     };
 }
 

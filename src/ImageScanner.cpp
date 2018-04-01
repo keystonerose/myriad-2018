@@ -10,6 +10,7 @@
 #include <cassert>
 
 using namespace myr;
+using CountFilter = qtx::EmissionFilter<ImageScanner, int, int>;
 
 namespace {
 
@@ -28,6 +29,42 @@ namespace {
         return supported.contains(mimeName.toLatin1());
     }
 
+    void recursiveScan(
+        const QString& rootPath,
+        std::vector<QString>& imagePaths, int& folderCount,
+        const CountFilter& countFilter) {
+
+        const auto rootInfo = QFileInfo{rootPath};
+        if (!rootInfo.exists()) {
+            return;
+        }
+
+        if (rootInfo.isFile()) {
+
+            if (fileSupported(rootPath)) {
+                imagePaths.push_back(rootPath);
+                countFilter.tryEmit(qtx::EmissionType::Timed, imagePaths.size(), folderCount);
+            }
+        }
+        else if (rootInfo.isDir()) {
+
+            auto rootDir = QDir{rootPath};
+            rootDir.setFilter(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
+
+            const auto items = rootDir.entryInfoList();
+            ++folderCount;
+            countFilter.tryEmit(qtx::EmissionType::Timed, imagePaths.size(), folderCount);
+
+            const auto thread = QThread::currentThread();
+            assert(thread);
+
+            const auto end = items.end();
+            for (auto iter = items.begin(); (iter != end) && !thread->isInterruptionRequested(); ++iter) {
+                recursiveScan(iter->absoluteFilePath(), imagePaths, folderCount, countFilter);
+            }
+        }
+    }
+
     /// Returns a list of all image MIME types that the application is able to process. May only be
     /// called after the `QApplication` instance has been created.
 
@@ -37,51 +74,16 @@ namespace {
     }
 }
 
-ImageScanner::ImageScanner()
-  : _countChangedSignal{*this, &ImageScanner::countChanged} {}
+void ImageScanner::exec(const QString& rootPath) const {
 
-void ImageScanner::emitCountChanged(const qtx::SignalFilterType type) const {
-    _countChangedSignal.tryEmit(type, _imagePaths.size(), _folderCount);
-}
+    auto imagePaths  = std::vector<QString>{};
+    auto folderCount = 0;
 
-void ImageScanner::recursiveScan(const QString& rootPath) {
+    const auto countFilter = CountFilter{*this, &ImageScanner::countChanged};
 
-    const auto rootInfo = QFileInfo{rootPath};
-    if (!rootInfo.exists()) {
-        return;
-    }
+    countFilter.tryEmit(qtx::EmissionType::Flush, imagePaths.size(), folderCount);
+    recursiveScan(rootPath, imagePaths, folderCount, countFilter);
 
-    if (rootInfo.isFile()) {
-
-        if (fileSupported(rootPath)) {
-            _imagePaths.push_back(rootPath);
-            emitCountChanged();
-        }
-    }
-    else if (rootInfo.isDir()) {
-
-        auto rootDir = QDir{rootPath};
-        rootDir.setFilter(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
-
-        const auto items = rootDir.entryInfoList();
-        ++_folderCount;
-        emitCountChanged();
-
-        const auto thread = this->thread();
-        assert(thread);
-
-        const auto end = items.end();
-        for (auto iter = items.begin(); (iter != end) && !thread->isInterruptionRequested(); ++iter) {
-            recursiveScan(iter->absoluteFilePath());
-        }
-    }
-}
-
-void ImageScanner::scan(const QString& rootPath) {
-
-    emitCountChanged(qtx::SignalFilterType::Flush);
-    recursiveScan(rootPath);
-
-    emitCountChanged(qtx::SignalFilterType::Flush);
-    Q_EMIT scanFinished(_imagePaths);
+    countFilter.tryEmit(qtx::EmissionType::Flush, imagePaths.size(), folderCount);
+    Q_EMIT finished(imagePaths);
 }
