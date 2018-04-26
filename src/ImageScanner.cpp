@@ -10,7 +10,6 @@
 #include <cassert>
 
 using namespace myr;
-using CountFilter = qtx::EmissionFilter<ImageScanner, int, int>;
 
 namespace {
 
@@ -29,10 +28,9 @@ namespace {
         return supported.contains(mimeName.toLatin1());
     }
 
+    template <typename F>
     void recursiveScan(
-        const QString& rootPath,
-        std::vector<QString>& imagePaths, int& folderCount,
-        const CountFilter& countFilter) {
+        const QString& rootPath, std::vector<QString>& imagePaths, int& folderCount, F update) {
 
         const auto rootInfo = QFileInfo{rootPath};
         if (!rootInfo.exists()) {
@@ -43,7 +41,7 @@ namespace {
 
             if (fileSupported(rootPath)) {
                 imagePaths.push_back(rootPath);
-                countFilter.tryEmit(qtx::EmissionType::Timed, imagePaths.size(), folderCount);
+                update();
             }
         }
         else if (rootInfo.isDir()) {
@@ -53,14 +51,14 @@ namespace {
 
             const auto items = rootDir.entryInfoList();
             ++folderCount;
-            countFilter.tryEmit(qtx::EmissionType::Timed, imagePaths.size(), folderCount);
+            update();
 
             const auto thread = QThread::currentThread();
             assert(thread);
 
             const auto end = items.end();
             for (auto iter = items.begin(); (iter != end) && !thread->isInterruptionRequested(); ++iter) {
-                recursiveScan(iter->absoluteFilePath(), imagePaths, folderCount, countFilter);
+                recursiveScan(iter->absoluteFilePath(), imagePaths, folderCount, update);
             }
         }
     }
@@ -79,10 +77,12 @@ void ImageScanner::exec(const QString& rootPath) const {
     auto imagePaths  = std::vector<QString>{};
     auto folderCount = 0;
 
-    const auto countFilter = CountFilter{*this, &ImageScanner::countChanged};
-
+    const auto countFilter = qtx::EmissionFilter{*this, &ImageScanner::countChanged};
     countFilter.tryEmit(qtx::EmissionType::Flush, imagePaths.size(), folderCount);
-    recursiveScan(rootPath, imagePaths, folderCount, countFilter);
+
+    recursiveScan(
+        rootPath, imagePaths, folderCount,
+        [&] { countFilter.tryEmit(qtx::EmissionType::Timed, imagePaths.size(), folderCount); });
 
     countFilter.tryEmit(qtx::EmissionType::Flush, imagePaths.size(), folderCount);
     Q_EMIT finished(imagePaths);
