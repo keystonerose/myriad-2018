@@ -1,7 +1,7 @@
 #ifndef QTX_EMISSION_FILTER_HPP
 #define QTX_EMISSION_FILTER_HPP
 
-#include "ksr/mem_fn_ptr.hpp"
+#include "ksr/mem_fn_traits.hpp"
 
 #include <QObject>
 
@@ -43,9 +43,12 @@ namespace qtx {
     /// next group of arguments passed to the signal, and so are inconsistent with the operation of
     /// `EmissionFilter`.)
 
-    template <typename Target, typename... SignalArgs>
+    template <typename SignalPtr>
     class EmissionFilter {
     public:
+
+        using DecayArgs = typename ksr::mem_fn_traits<SignalPtr>::decay_args;
+        using Target    = typename ksr::mem_fn_traits<SignalPtr>::cv_object;
 
         static constexpr auto DefaultInterval = std::chrono::milliseconds{50};
 
@@ -54,7 +57,6 @@ namespace qtx {
         /// the `EmissionFilter`. `interval` governs the length of the pause introduced by the
         /// `EmissionType::Timed` mode.
 
-        using SignalPtr = ksr::mem_fn_ptr_t<void, Target, SignalArgs...>;
         explicit EmissionFilter(
             Target& target, SignalPtr sig, std::chrono::milliseconds interval = DefaultInterval)
           : _target{target}, _sig{sig}, _interval{interval} {
@@ -81,7 +83,7 @@ namespace qtx {
     private:
 
         struct EmissionInfo {
-            std::tuple<std::decay_t<SignalArgs>...> args;
+            DecayArgs args;
             std::chrono::steady_clock::time_point time;
         };
 
@@ -117,14 +119,6 @@ namespace qtx {
 
         mutable std::optional<EmissionInfo> _last;
     };
-
-    template <typename T, typename... SignalArgs>
-    EmissionFilter(T&, void (T::*)(SignalArgs...), std::chrono::milliseconds)
-        -> EmissionFilter<T, SignalArgs...>;
-
-    template <typename T, typename... SignalArgs>
-    EmissionFilter(const T&, void (T::*)(SignalArgs...) const, std::chrono::milliseconds)
-        -> EmissionFilter<const T, SignalArgs...>;
 }
 
 #endif
