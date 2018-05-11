@@ -6,18 +6,18 @@
 
 namespace ksr {
 
-    namespace impl {
+    namespace _impl_hash {
 
-        template <std::size_t size>
+        template<std::size_t size>
         struct fnv1a_constants;
 
-        template <>
+        template<>
         struct fnv1a_constants<sizeof(std::uint32_t)> {
             static constexpr auto offset_basis = std::uint32_t{2166136261u};
             static constexpr auto prime        = std::uint32_t{16777619u};
         };
 
-        template <>
+        template<>
         struct fnv1a_constants<sizeof(std::uint64_t)> {
             static constexpr auto offset_basis = std::uint64_t{14695981039346656037ull};
             static constexpr auto prime        = std::uint64_t{1099511628211ull};
@@ -33,7 +33,7 @@ namespace ksr {
 
     inline auto fnv1a_hash(const unsigned char* data, std::size_t size) noexcept -> std::size_t {
 
-        using constants = impl::fnv1a_constants<sizeof(std::size_t)>;
+        using constants = _impl_hash::fnv1a_constants<sizeof(std::size_t)>;
 
         auto result = std::size_t{constants::offset_basis};
         for (auto i = std::size_t{0}; i < size; ++i) {

@@ -6,14 +6,14 @@
 
 namespace ksr {
 
-    template <typename mem_fn_ptr>
+    template<typename mem_fn_ptr>
     struct mem_fn_traits;
 
     // [[[cog
     // import cog
     //
     // traits_defn = r'''
-    // template <typename ret, typename t, typename... args>
+    // template<typename ret, typename t, typename... args>
     // struct mem_fn_traits<ret (t::*)(args...){0}> {{
     //
     //     using result     = ret;
@@ -34,7 +34,7 @@ namespace ksr {
     //
     // ]]]
 
-    template <typename ret, typename t, typename... args>
+    template<typename ret, typename t, typename... args>
     struct mem_fn_traits<ret (t::*)(args...)> {
 
         using result     = ret;
@@ -43,7 +43,7 @@ namespace ksr {
     };
 
 
-    template <typename ret, typename t, typename... args>
+    template<typename ret, typename t, typename... args>
     struct mem_fn_traits<ret (t::*)(args...) volatile> {
 
         using result     = ret;
@@ -52,7 +52,7 @@ namespace ksr {
     };
 
 
-    template <typename ret, typename t, typename... args>
+    template<typename ret, typename t, typename... args>
     struct mem_fn_traits<ret (t::*)(args...) const> {
 
         using result     = ret;
@@ -61,7 +61,7 @@ namespace ksr {
     };
 
 
-    template <typename ret, typename t, typename... args>
+    template<typename ret, typename t, typename... args>
     struct mem_fn_traits<ret (t::*)(args...) const volatile> {
 
         using result     = ret;

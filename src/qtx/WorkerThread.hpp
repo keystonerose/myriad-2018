@@ -36,7 +36,7 @@ namespace qtx {
         /// terminates the thread if it is running). The returned reference is valid until such a
         /// time.
 
-        template <typename T, typename... Args>
+        template<typename T, typename... Args>
         auto emplaceWorker(Args&&... args) -> T&;
 
         /// Launches the thread, as if by `QThread::start(priority)`, and ensures that
@@ -56,7 +56,7 @@ namespace qtx {
         std::vector<std::unique_ptr<QObject>> _pendingWorkers;
     };
 
-    template <typename T, typename... Args>
+    template<typename T, typename... Args>
     auto WorkerThread::emplaceWorker(Args&&... args) -> T& {
 
         auto worker = std::make_unique<T>(std::forward<Args>(args)...);

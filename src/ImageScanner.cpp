@@ -28,7 +28,7 @@ namespace {
         return supported.contains(mimeName.toLatin1());
     }
 
-    template <typename F>
+    template<typename F>
     void recursiveScan(
         const QString& rootPath, std::vector<QString>& imagePaths, int& folderCount, F update) {
 

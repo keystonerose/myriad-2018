@@ -43,7 +43,7 @@ namespace qtx {
     /// next group of arguments passed to the signal, and so are inconsistent with the operation of
     /// `EmissionFilter`.)
 
-    template <typename SignalPtr>
+    template<typename SignalPtr>
     class EmissionFilter {
     public:
 
@@ -68,7 +68,7 @@ namespace qtx {
         /// met. (See `EmissionType`.) Returns `true` if an emission was performed or `false` if it
         /// was suppressed.
 
-        template <typename... Args>
+        template<typename... Args>
         auto tryEmit(EmissionType type, Args&&... args) const -> bool {
 
             switch (type) {
@@ -87,7 +87,7 @@ namespace qtx {
             std::chrono::steady_clock::time_point time;
         };
 
-        template <typename... Args>
+        template<typename... Args>
         auto flushEmit(Args&&... args) const -> bool {
 
             if (_last && (std::tie(args...) == _last->args)) {
@@ -103,7 +103,7 @@ namespace qtx {
             return true;
         }
 
-        template <typename... Args>
+        template<typename... Args>
         auto timedEmit(Args&&... args) const -> bool {
 
             const auto now     = std::chrono::steady_clock::now();

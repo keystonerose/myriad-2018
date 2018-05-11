@@ -1,5 +1,5 @@
-#ifndef QTX_STD_HASH_HPP
-#define QTX_STD_HASH_HPP
+#ifndef QTX_QSTRING_HASH_HPP
+#define QTX_QSTRING_HASH_HPP
 
 #include "ksr/hash.hpp"
 
@@ -11,7 +11,7 @@
 
 namespace std {
 
-    template <>
+    template<>
     struct hash<QString> {
         auto operator()(const QString& value) const noexcept -> std::size_t {
 
